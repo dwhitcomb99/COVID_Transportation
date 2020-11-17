@@ -1,0 +1,122 @@
+covid19 <- read.csv("10.31.2020.csv")
+head(covid19)
+
+TransportData <- read.csv("C:/Users/Derri/Downloads/TransportData.csv")
+head(TransportData)
+confirmedrate<-covid19$Confirmed/covid19$People_Tested; confirmedrate
+
+favstats(confirmedrate)
+data_confirmed<-data.frame(covid19$ï..Province_State,confirmedrate)
+head(data_confirmed)
+names(data_confirmed)[1]<-"State"
+names(TransportData)[6]<-"State"
+data_1<-merge(data_confirmed,TransportData,by="State");head(data_1)
+conf_group<-ifelse(data_1$confirmedrate<=0.041,"1-Low",ifelse(data_1$confirmedrate<=0.0616,"2-Medium",ifelse(data_1$confirmedrate<=0.0829,"3-High")))
+conf_group
+favstats(confirmedrate~TransportData$Population.Not.Staying.at.Home)
+
+sort(data_confirmed$confirmedrate)
+sort(data_confirmed$confirmedrate)[17]
+sort(data_confirmed$confirmedrate)[34]
+sort(data_confirmed$confirmedrate)[50]
+cr_group<-ifelse(data_confirmed$confirmedrate<=0.04823623,"1-Low",ifelse(data_confirmed$confirmedrate<=0.07539736,"2-Medium","3-High"))
+cr_group
+
+which(cr_group=="1-Low")
+cov19$State[cr_group=="1-Low"]
+which(cr_group=="2-Medium")
+cov19$State[cr_group=="2-Medium"]
+which(cr_group=="3-High")
+cov19$State[cr_group=="3-High"]
+
+crg<-data.frame(cov19,cr_group)
+crg<-na.omit(crg)
+
+
+favstats(confirmedrate~cr_group)
+par(mfrow=c(2,1))
+boxplot(confirmedrate~cr_group)
+group_data_LM = group_data[group_data$crg.cr_group=="1-Low"|group_data$crg.cr_group=="2-Medium",]
+group_data_LH = group_data[group_data$crg.cr_group=="1-Low"|group_data$crg.cr_group=="3-High",]
+group_data_MH = group_data[group_data$crg.cr_group=="2-Medium"|group_data$crg.cr_group=="3-High",]
+
+aovlm= aov(group_data_LM$crg.confirmedrate~group_data_LM$crg.cr_group,data=group_data_LM); summary(aovlm)
+aovlh= aov(group_data_LH$crg.confirmedrate~group_data_LH$crg.cr_group,data=group_data_LH); summary(aovlh)
+aovmh= aov(group_data_MH$crg.confirmedrate~group_data_MH$crg.cr_group,data=group_data_MH); summary(aovmh)
+
+
+group_data_mLM = group_data[group_data$fa_group=="1-Low"|group_data$fa_group=="2-Medium",]
+group_data_mLH = group_data[group_data$fa_group=="1-Low"|group_data$fa_group=="3-High",]
+group_data_mMH = group_data[group_data$fa_group=="2-Medium"|group_data$fa_group=="3-High",]
+
+aovmlm= aov(group_data_mLM$covid19.Mortality_Rate~group_data_mLM$fa_group,data=group_data_mLM); summary(aovmlm)
+aovmlh= aov(group_data_mLH$covid19.Mortality_Rate~group_data_mLH$fa_group,data=group_data_mLH); summary(aovmlh)
+aovmmh= aov(group_data_mMH$covid19.Mortality_Rate~group_data_mMH$fa_group,data=group_data_mMH); summary(aovmmh)
+
+
+
+wilcox.test(group_data_mLM$covid19.Mortality_Rate~group_data_mLM$crg.cr_group,data=group_data_mLM ,alternative="greater",exact=FALSE,correct=TRUE)
+wilcox.test(group_data_mLH$covid19.Mortality_Rate~group_data_mLH$crg.cr_group,data=group_data_mLH ,alternative="greater",exact=FALSE,correct=TRUE)
+wilcox.test(group_data_mMH$covid19.Mortality_Rate~group_data_mMH$crg.cr_group,data=group_data_mMH ,alternative="greater",exact=FALSE,correct=TRUE)
+
+crg2<-data.frame(crg$State,covid19$Mortality_Rate,crg$confirmedrate,crg$cr_group)
+crg2<-na.omit(crg2)
+
+aov2<-aov(crg2$covid19.Mortality_Rate~crg2$crg.confirmedrate)
+summary(aov2)
+group_data<-data.frame(crg2,TransportData$Population.Staying.at.Home)
+test<-aov(group_data$crg.confirmedrate~group_data$TransportData.Population.Staying.at.Home);test
+summary(test)
+
+sort(group_data$covid19.Mortality_Rate)
+sort(group_data$covid19.Mortality_Rate)[17]
+sort(group_data$covid19.Mortality_Rate)[34]
+sort(group_data$covid19.Mortality_Rate)[51]
+fa_group<-ifelse(group_data$covid19.Mortality_Rate<=1.543022,"1-Low",ifelse(group_data$covid19.Mortality_Rate<=2.415281,"2-Medium","3-High"));fa_group
+group_data<-data.frame(crg2,fa_group,TransportData$Population.Staying.at.Home,TransportData$Trips)
+
+cr_group<-na.omit(cr_group)
+wilcox.test(group_data$covid19.Mortality_Rate,group_data$cr_group,alternative="greater",exact=FALSE,correct=TRUE)
+
+mod1<-lm(crg.confirmedrate~covid19.Mortality_Rate,data=group_data[which(group_data$crg.cr_group=="1-Low"),])
+summary(mod1)
+plot(mod1)
+mod2<-lm(crg.confirmedrate~covid19.Mortality_Rate,data=group_data[which(group_data$crg.cr_group=="2-Medium"),])
+summary(mod2)
+plot(mod2)
+mod3<-lm(crg.confirmedrate~covid19.Mortality_Rate,data=group_data[which(group_data$crg.cr_group=="3-High"),])
+summary(mod3)
+plot(mod3)
+
+
+
+modconflow<-lm(((crg.confirmedrate)*100)~TransportData.Trips+covid19.Mortality_Rate,group_data$TransportData.Population.Staying.at.Home,data=group_data[which(group_data$crg.cr_group=="1-Low"),])
+summary(modconflow)
+plot(modconflow)
+modconfmid<-lm(((crg.confirmedrate)*100)~TransportData.Trips+covid19.Mortality_Rate,data=group_data[which(group_data$crg.cr_group=="2-Medium"),])
+summary(modconfmid)
+plot(modconfmid)
+modconfhigh<-lm(((crg.confirmedrate)*100)~TransportData.Trips+covid19.Mortality_Rate,data=group_data[which(group_data$crg.cr_group=="3-High"),])
+summary(modconfhigh)
+plot(modconfhigh)
+
+
+modmortlow<-lm(((covid19.Mortality_Rate)*100)~TransportData.Trips+crg.confirmedrate,data=group_data[which(group_data$crg.cr_group=="1-Low"),])
+summary(modmortlow)
+plot(modmortlow)
+modmortmid<-lm(((covid19.Mortality_Rate)*100)~TransportData.Trips+crg.confirmedrate,data=group_data[which(group_data$crg.cr_group=="2-Medium"),])
+summary(modmortmid)
+plot(modmortmid)
+modmorthigh<-lm(((covid19.Mortality_Rate)*100)~TransportData.Trips+crg.confirmedrate,data=group_data[which(group_data$crg.cr_group=="3-High"),])
+summary(modmorthigh)
+plot(modmorthigh)
+
+mod4<-lm(covid19.Mortality_Rate~crg.confirmedrate,data=group_data[which(group_data$crg.cr_group=="1-Low"),])
+summary(mod4)
+plot(mod4)
+mod5<-lm(covid19.Mortality_Rate~crg.confirmedrate,data=group_data[which(group_data$crg.cr_group=="2-Medium"),])
+summary(mod5)
+plot(mod5)
+mod6<-lm(covid19.Mortality_Rate~crg.confirmedrate,data=group_data[which(group_data$crg.cr_group=="3-High"),])
+summary(mod6)
+plot(mod6)
